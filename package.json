@@ -1,0 +1,34 @@
+{
+  "name": "rentora",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "test": "vitest run tests/unit",
+    "test:watch": "vitest",
+    "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/rules\"",
+    "test:integration": "firebase emulators:exec --project rentora-demo --only auth,firestore \"vitest run tests/integration\"",
+    "seed:emulator": "node scripts/seedCars.mjs --emulator",
+    "seed:production": "node scripts/seedCars.mjs --production --confirm-production",
+    "emulators": "firebase emulators:start --only auth,firestore"
+  },
+  "dependencies": {
+    "firebase": "^12.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "eslint": "^9.39.1",
+    "firebase-admin": "^13.6.0",
+    "firebase-tools": "^14.26.0",
+    "globals": "^16.5.0",
+    "jsdom": "^27.2.0",
+    "vite": "^7.2.2",
+    "vitest": "^4.0.10"
+  }
+}

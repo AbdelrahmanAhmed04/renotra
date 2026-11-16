@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function shortText(value, max) {
+      return value is string && value.size() > 0 && value.size() <= max;
+    }
+
+    function optionalShortText(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    function validDate(value) {
+      return value is string && value.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$');
+    }
+
+    function carIsPublic(carId) {
+      return exists(/databases/$(database)/documents/cars/$(carId))
+        && get(/databases/$(database)/documents/cars/$(carId)).data.published == true;
+    }
+
+    function validBookingCreate(uid) {
+      let d = request.resource.data;
+      let car = get(/databases/$(database)/documents/cars/$(d.carId)).data;
+      return d.keys().hasOnly([
+          'userId', 'carId', 'carNameSnapshot', 'dailyRateSnapshot', 'currency',
+          'pickupDate', 'returnDate', 'rentalDays', 'estimatedTotal',
+          'customerName', 'customerEmail', 'customerPhone', 'pickupLocation',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && d.keys().hasAll([
+          'userId', 'carId', 'carNameSnapshot', 'dailyRateSnapshot', 'currency',
+          'pickupDate', 'returnDate', 'rentalDays', 'estimatedTotal',
+          'customerName', 'customerEmail', 'customerPhone', 'pickupLocation',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && d.userId == uid && d.userId == request.auth.uid
+        && shortText(d.carId, 100) && carIsPublic(d.carId)
+        && d.carNameSnapshot == car.name
+        && d.dailyRateSnapshot is number && d.dailyRateSnapshot == car.pricePerDay
+        && d.currency == car.currency && d.currency == 'EGP'
+        && validDate(d.pickupDate) && validDate(d.returnDate)
+        && d.returnDate > d.pickupDate
+        && d.rentalDays is int && d.rentalDays >= 1 && d.rentalDays <= 30
+        && d.estimatedTotal is number
+        && d.estimatedTotal == d.dailyRateSnapshot * d.rentalDays
+        && d.estimatedTotal >= 1 && d.estimatedTotal <= 1000000
+        && shortText(d.customerName, 80)
+        && shortText(d.customerEmail, 254)
+        && shortText(d.customerPhone, 24)
+        && optionalShortText(d.pickupLocation, 120)
+        && d.status == 'requested'
+        && d.createdAt == request.time && d.updatedAt == request.time;
+    }
+
+    match /cars/{carId} {
+      allow get, list: if resource.data.published == true;
+      allow create, update, delete: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['displayName', 'email', 'phone', 'createdAt', 'updatedAt'])
+        && shortText(request.resource.data.displayName, 80)
+        && shortText(request.resource.data.email, 254)
+        && optionalShortText(request.resource.data.phone, 24)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'phone', 'updatedAt'])
+        && shortText(request.resource.data.displayName, 80)
+        && optionalShortText(request.resource.data.phone, 24)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+
+      match /bookings/{bookingId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validBookingCreate(uid);
+        allow update: if isOwner(uid)
+          && resource.data.status == 'requested'
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
