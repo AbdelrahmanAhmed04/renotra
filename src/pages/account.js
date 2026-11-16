@@ -31,20 +31,39 @@ export function renderBookings(context) {
 export async function mountBookings(context) {
   const profile = await protectAndProfile(context); if (!context.user) return;
   const main = document.querySelector('#main-content');
-  main.innerHTML = `<section class="page-hero"><div class="container"><span class="eyebrow">Your account</span><h1>Booking requests.</h1><p class="lead">Every request shown here comes from your private Firestore subcollection.</p></div></section><div class="container account-grid">${accountSidebar(context.user, profile, 'bookings')}<section><div id="bookings-list"><div class="skeleton" style="min-height:360px"></div></div></section></div>`;
+  main.innerHTML = `<section class="page-hero"><div class="container"><span class="eyebrow">Your account</span><h1>Booking requests.</h1><p class="lead">Every request shown here comes from your private Firestore subcollection.</p></div></section><div class="container account-grid">${accountSidebar(context.user, profile, 'bookings')}<section><div id="account-message" aria-live="polite"></div><div id="bookings-list"><div class="skeleton" style="min-height:360px"></div></div></section></div><dialog class="confirm-dialog" id="cancel-dialog" aria-labelledby="cancel-dialog-title"><div class="confirm-dialog-mark" aria-hidden="true">!</div><h2 id="cancel-dialog-title">Cancel this request?</h2><p>This changes its status permanently. The vehicle, dates, and price snapshot will remain in your history.</p><div class="confirm-dialog-actions"><button class="btn btn-danger" type="button" id="confirm-cancel">Cancel request</button><button class="btn btn-secondary" type="button" id="keep-booking">Keep request</button></div></dialog>`;
   bindAccount(context.router);
   const target = document.querySelector('#bookings-list');
   try {
     const bookings = await getUserBookings(context.user.uid);
     target.innerHTML = bookings.length ? `<div class="booking-list">${bookings.map(bookingItem).join('')}</div>` : '<div class="state-panel surface"><h2>No booking requests yet</h2><p class="muted">When you send your first request, it will appear here.</p><a class="btn" href="/cars" data-link>Find a car</a></div>';
     context.router.bindLinks();
-    document.querySelectorAll('[data-cancel-booking]').forEach((button) => button.addEventListener('click', async () => {
-      const confirmed = window.confirm('Cancel this pending booking request? This cannot be changed back.');
-      if (!confirmed) return;
-      button.disabled = true; button.textContent = 'Cancelling…';
-      try { await cancelBooking(context.user.uid, button.dataset.cancelBooking); await mountBookings(context); }
-      catch { button.disabled = false; button.textContent = 'Cancel request'; window.alert('The request could not be cancelled. Refresh and try again.'); }
+    const dialog = document.querySelector('#cancel-dialog');
+    const confirmButton = document.querySelector('#confirm-cancel');
+    let pendingButton = null;
+    document.querySelectorAll('[data-cancel-booking]').forEach((button) => button.addEventListener('click', () => {
+      pendingButton = button;
+      dialog.showModal();
     }));
+    document.querySelector('#keep-booking').addEventListener('click', () => { pendingButton = null; dialog.close(); });
+    dialog.addEventListener('cancel', () => { pendingButton = null; });
+    confirmButton.addEventListener('click', async () => {
+      if (!pendingButton) return;
+      const bookingId = pendingButton.dataset.cancelBooking;
+      confirmButton.disabled = true; confirmButton.textContent = 'Cancelling…';
+      try {
+        await cancelBooking(context.user.uid, bookingId);
+        dialog.close();
+        await mountBookings(context);
+        document.querySelector('#account-message').innerHTML = '<p class="notice notice-success account-feedback">The booking request was cancelled and remains in your history.</p>';
+      } catch {
+        dialog.close();
+        document.querySelector('#account-message').innerHTML = '<p class="notice notice-error account-feedback">The request could not be cancelled. Refresh and try again.</p>';
+        pendingButton.disabled = false; pendingButton.textContent = 'Cancel request';
+      } finally {
+        confirmButton.disabled = false; confirmButton.textContent = 'Cancel request'; pendingButton = null;
+      }
+    });
   } catch {
     target.innerHTML = '<div class="state-panel surface"><h2>Couldn’t load your requests</h2><p class="muted">Check your connection and Firestore rules, then try again.</p><button class="btn btn-sm" onclick="location.reload()">Try again</button></div>';
   }

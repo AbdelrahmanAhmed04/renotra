@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750">
-  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#dcebe5"/><stop offset="1" stop-color="#f3e7c7"/></linearGradient></defs>
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#e8e3d9"/><stop offset="1" stop-color="#d8d5cc"/></linearGradient></defs>
   <rect width="1200" height="750" fill="url(#g)"/>
-  <path d="M287 477h625l-42-135c-11-34-43-57-79-57H468c-35 0-68 18-87 48l-94 144Z" fill="#173f36"/>
-  <path d="m449 318-72 117h425l-42-117H449Z" fill="#f7f5ef" opacity=".9"/>
-  <path d="M213 462c0-32 26-58 58-58h628c49 0 88 39 88 88v44H213v-74Z" fill="#24594c"/>
-  <circle cx="383" cy="527" r="70" fill="#17211e"/><circle cx="383" cy="527" r="33" fill="#f6c55c"/>
-  <circle cx="824" cy="527" r="70" fill="#17211e"/><circle cx="824" cy="527" r="33" fill="#f6c55c"/>
-  <text x="600" y="665" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#173f36">RENTORA</text>
+  <path d="M287 477h625l-42-135c-11-34-43-57-79-57H468c-35 0-68 18-87 48l-94 144Z" fill="#2b2d29"/>
+  <path d="m449 318-72 117h425l-42-117H449Z" fill="#f4f1e9" opacity=".9"/>
+  <path d="M213 462c0-32 26-58 58-58h628c49 0 88 39 88 88v44H213v-74Z" fill="#181a17"/>
+  <circle cx="383" cy="527" r="70" fill="#181a17"/><circle cx="383" cy="527" r="33" fill="#b86138"/>
+  <circle cx="824" cy="527" r="70" fill="#181a17"/><circle cx="824" cy="527" r="33" fill="#b86138"/>
+  <text x="600" y="665" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" letter-spacing="8" fill="#181a17">RENTORA</text>
 </svg>
